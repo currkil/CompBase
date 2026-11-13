@@ -1,7 +1,7 @@
 # CompBase
 
 个人电子元器件库存管理系统。运行在一台 Linux 小电脑上，浏览器访问，用来记录元器件信息、库存数量、存放位置，
-按 BOM 表批量占用库存，并给每个元器件挂一份 Markdown 备注。
+按 BOM 表批量占用库存，并给每个元器件挂一份 Markdown 备注。 注意：本项目大量采用Deepseek Harness创作。
 
 - 零 Web 框架：只用 JDK 自带的 `com.sun.net.httpserver.HttpServer`
 - 零 JSON 依赖：手写序列化与解析（`compbase.util.Json`）
@@ -422,6 +422,9 @@ import_log(log_id, import_type, file_name, duplicate_strategy,
 - 旧库升级：`CREATE TABLE IF NOT EXISTS` 只会补建新表；`Database.initSchema()` 会给已存在的
   `component` 表补 `created_at` / `updated_at`，给 `package` 表补 `full_name` / `pin_count` / `pitch` /
   `model_file` / `model_format` / `description`（`ALTER TABLE` 无法补 CHECK 约束，旧库的约束校验由应用层负责）。
+
+## DeepSeek Harness
+在此感谢梁圣开发出DeepSeek。本项目共使用147M token。缓存命中率99.9%，平均129 token/s，9轮459步。
 
 ## 已知限制
 
