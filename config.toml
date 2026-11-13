@@ -1,0 +1,13 @@
+[app]
+name = "CompBase"
+version = "0.1.0"
+
+[database]
+path = "data/compbase.db"
+
+[notes]
+dir = "notes"
+images_dir = "notes/images"
+
+[logging]
+level = "INFO"

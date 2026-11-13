@@ -1,0 +1,143 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'cd.cc.currkill'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    maven { url 'https://maven.aliyun.com/repository/public' }
+    maven { url 'https://mirrors.cloud.tencent.com/nexus/repository/maven-public/' }
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // SQLite
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
+
+    // TOML
+    implementation 'com.moandjiezana.toml:toml4j:0.7.2'
+}
+
+java {
+    // HttpServer 与 Path.of / Files.readString 都需要 JDK 11+
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+application {
+    mainClass = 'compbase.CompBaseApplication'
+    // 开发板内存紧张，默认给一个保守的堆大小
+    applicationDefaultJvmArgs = ['-Xmx512m', '-Xms256m']
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('jar') {
+    manifest {
+        attributes 'Main-Class': 'compbase.CompBaseApplication'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// ==================== CompBase 自定义任务 ====================
+
+/**
+ * 清空数据库：删除所有业务数据并把自增序号归零（保留表结构）。
+ * 用法：
+ *   ./gradlew resetDb -Pyes=true                  # 清空数据库
+ *   ./gradlew resetDb -Pyes=true -PwithNotes=true # 同时清空 notes/ 与 notes/images
+ *   ./gradlew resetDb -Pdb=data/other.db -Pyes=true
+ * 不加 -Pyes=true 时会在终端里要求输入 YES 确认。
+ */
+tasks.register('resetDb', JavaExec) {
+    group = 'compbase'
+    description = '清空数据库业务数据并重置自增序号（-Pyes=true 跳过确认，-PwithNotes=true 同时清备注）'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'compbase.tool.ResetDatabase'
+    workingDir = layout.projectDirectory.asFile
+    standardInput = System.in
+
+    def cliArgs = []
+    if (project.hasProperty('yes')) {
+        cliArgs.add('--yes')
+    }
+    if (project.hasProperty('withNotes')) {
+        cliArgs.add('--with-notes')
+    }
+    if (project.hasProperty('db')) {
+        cliArgs.add("--db=${project.property('db')}")
+    }
+    args = cliArgs
+}
+
+/**
+ * 打包含全部依赖与静态资源的可执行 jar（不需要 shadow 插件）。
+ * 产物：build/libs/compbase-all.jar
+ */
+tasks.register('fatJar', Jar) {
+    group = 'compbase'
+    description = '打包所有依赖 + static 资源的可执行 jar'
+    dependsOn tasks.named('classes')
+    archiveFileName = 'compbase-all.jar'
+    destinationDirectory = layout.buildDirectory.dir('libs')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+
+    manifest {
+        attributes 'Main-Class': 'compbase.CompBaseApplication'
+    }
+
+    from sourceSets.main.output
+    from({
+        configurations.runtimeClasspath.collect { file ->
+            file.isDirectory() ? file : zipTree(file)
+        }
+    }) {
+        exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.EC',
+                'META-INF/INDEX.LIST', 'module-info.class',
+                'META-INF/versions/*/module-info.class'
+    }
+}
+
+/**
+ * 发布包：fat jar + data/ + notes/ + config.toml + ENVIRONMENT_VAR + README。
+ * 不包含 .local、.git、build、.gradle 等开发文件。
+ * 产物：build/dist/CompBase-<version>.zip
+ * 解压后在该目录执行 java -jar compbase-all.jar 即可运行。
+ */
+tasks.register('releaseZip', Zip) {
+    group = 'compbase'
+    description = '打包 fat jar 与 data/、notes/、配置文件为发布 zip（不含 .local）'
+    dependsOn tasks.named('fatJar')
+    archiveFileName = "CompBase-${project.version}.zip"
+    destinationDirectory = layout.buildDirectory.dir('dist')
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+    def rootDir = "CompBase-${project.version}"
+
+    from(tasks.named('fatJar')) {
+        into rootDir
+    }
+    from(layout.projectDirectory) {
+        include 'config.toml', 'ENVIRONMENT_VAR', 'README.md'
+        into rootDir
+    }
+    from(layout.projectDirectory.dir('data')) {
+        into "${rootDir}/data"
+    }
+    from(layout.projectDirectory.dir('notes')) {
+        into "${rootDir}/notes"
+    }
+}

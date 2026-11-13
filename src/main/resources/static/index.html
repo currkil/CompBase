@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CompBase · 元器件库存</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/components">
+    <span class="brand-mark">◧</span>
+    <span class="brand-name">CompBase</span>
+    <span class="brand-sub">元器件库存</span>
+  </a>
+  <nav class="nav">
+    <a class="nav-link" href="#/components" data-section="components">元器件</a>
+    <a class="nav-link" href="#/packages" data-section="packages">封装大全</a>
+    <a class="nav-link" href="#/bom" data-section="bom">BOM 占用</a>
+    <a class="nav-link" href="#/import" data-section="import">基础数据导入</a>
+    <a class="nav-link" href="#/logs" data-section="logs">导入日志</a>
+    <a class="nav-link" href="#/manage" data-section="manage">数据管理</a>
+  </nav>
+  <div class="topbar-right">
+    <a class="btn primary" href="#/component/new">＋ 新增元器件</a>
+  </div>
+</header>
+
+<main class="page">
+  <div id="view" class="view"></div>
+</main>
+
+<!-- 备注抽屉（不属于「新增元器件 / 数据管理」的弹窗范围，仅作为列表的侧边详情） -->
+<aside id="drawer" class="drawer" hidden>
+  <header class="drawer-head">
+    <div>
+      <h2 id="drawer-title">备注</h2>
+      <p id="drawer-sub" class="muted"></p>
+    </div>
+    <button id="drawer-close" class="icon-btn" type="button" title="关闭">×</button>
+  </header>
+  <div class="drawer-body">
+    <div class="note-toolbar">
+      <button id="btn-preview" class="btn tiny ghost" type="button">预览</button>
+      <label class="btn tiny ghost file-btn" title="上传图片并插入 Markdown 引用">
+        上传图片
+        <input id="note-image" type="file" accept="image/*" multiple hidden>
+      </label>
+      <span class="spacer"></span>
+      <button id="btn-save-note" class="btn tiny primary" type="button">保存备注</button>
+    </div>
+    <textarea id="note-editor" class="note-editor"
+              placeholder="支持 Markdown：标题、列表、代码块、图片。图片上传后会自动插入引用。"></textarea>
+    <div id="note-preview" class="note-preview" hidden></div>
+    <div id="note-images" class="note-images"></div>
+  </div>
+</aside>
+
+<div id="toast" class="toast" hidden></div>
+
+<!-- Three.js 平铺在 static/vendor/three/；addons 里的相对 utils 引用用 importmap 重定向 -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three/three.module.js",
+    "three/addons/": "/vendor/three/",
+    "/vendor/utils/BufferGeometryUtils.js": "/vendor/three/BufferGeometryUtils.js",
+    "/vendor/utils/SkeletonUtils.js": "/vendor/three/SkeletonUtils.js"
+  }
+}
+</script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
